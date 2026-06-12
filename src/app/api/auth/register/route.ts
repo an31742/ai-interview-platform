@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查邮箱是否已注册
-    const existed = findUserByEmail(email);
+    const existed = await findUserByEmail(email);
     if (existed) {
       return NextResponse.json(
         { error: "该邮箱已注册" },
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hashPassword(password, salt);
 
     // 创建用户
-    const user = createUser(email, name.trim(), passwordHash, salt);
+    const user = await createUser(email, name.trim(), passwordHash, salt);
 
     // 签发 Token
     const token = await signToken(user);

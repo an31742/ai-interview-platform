@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 查找用户
-    const user = findUserByEmail(email);
+    const user = await findUserByEmail(email);
     if (!user) {
       return NextResponse.json(
         { error: "邮箱或密码错误" },

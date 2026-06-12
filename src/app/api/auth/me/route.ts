@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 查找用户
-    const user = findUserById(payload.sub);
+    const user = await findUserById(payload.sub);
     if (!user) {
       return NextResponse.json({ error: "用户不存在" }, { status: 401 });
     }
