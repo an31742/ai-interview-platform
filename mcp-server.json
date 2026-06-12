@@ -1,0 +1,19 @@
+{
+  "name": "ai-playground-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server 提供天气查询和时间查询工具",
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "查询指定城市的实时天气信息"
+    },
+    {
+      "name": "get_time",
+      "description": "获取指定时区的当前时间"
+    }
+  ],
+  "transport": "stdio",
+  "command": "npx",
+  "args": ["tsx", "src/mcp/server.ts"],
+  "env": {}
+}
