@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  //provider = "postgresql"
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+
+ model User {
+  id             String   @id @default(cuid())
+  email          String   @unique   ← 填什么？保证不重复
+  name           String              ← 这个不用填，名字必填
+  passwordHash   String              ← 密码哈希，必填
+  createdAt      DateTime @default(now())  ← 填什么？自动填时间
+  updatedAt      DateTime @updatedAt   ← 填什么？修改时更新
+ }
+
+ //简历
+model Resume{
+id   int 可以自增
+userId  string  因为是1对多的关系 一个用户可以有多个简历
+resumeName string 简历的名称
+resumeContext  JSon字段  里面有个人信息 有工作经历  有项目经历  简历的内容
+简历评分
+size 要记
+简历的分析进度 对应多个字段值  1,2,3,4， 开始分析，分析结束，评价，
+}
