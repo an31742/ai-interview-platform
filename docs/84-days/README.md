@@ -38,9 +38,12 @@ Phase 3 ── 生产就绪（第 9-12 周）
 
 ### Phase 1：基础设施重构（第 1-4 周）
 
+> 🐣 **Week 1 有小白版 → [点这里](week-01-database/小白版-Week1-学习计划.md)**
+> 如果你是零基础，先走小白版。原计划留在目录里供参考。
+
 | 周 | 主题 | 目标 | 难度 |
 |:--:|------|------|:----:|
-| **1** | [企业级数据库：Prisma + PostgreSQL](week-01-database/README.md) | 多用户数据持久化，告别 localStorage | 🔥🔥 |
+| **1** | [企业级数据库：Prisma + PostgreSQL](week-01-database/README.md) · [小白版](week-01-database/小白版-Week1-学习计划.md) | 多用户数据持久化，告别 localStorage | 🔥🔥 |
 | **2** | [API 与认证体系](week-02-api-auth/README.md) | RESTful API 规范 + 完善 JWT 认证 | 🔥🔥 |
 | **3** | [服务层架构](week-03-service-layer/README.md) | Repository/Service/Controller 三层解耦 | 🔥🔥🔥 |
 | **4** | [状态管理重构 + 前端数据流](week-04-state-management/README.md) | 从 localStorage 到 Server State | 🔥🔥🔥 |
@@ -139,6 +142,12 @@ Phase 3 ── 生产就绪（第 9-12 周）
 - 用那天的时间模拟面试官问你更深的问题
 
 **但不要跳过。**
+
+如果你发现某周对你来说太难（比如 Week 1 你还没有后端基础）：
+- 看该周的目录下有没有 `小白版-*` 文件
+- 小白版按你的节奏重新排了顺序，加了概念讲解
+- 内容一样，只是步子更小、更慢
+- 走完小白版再回头看原版，你会发现都能理解了
 
 ---
 
