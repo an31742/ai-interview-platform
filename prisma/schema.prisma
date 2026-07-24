@@ -28,6 +28,8 @@ model Resume {
   resumeName    String
   resumeContext Json?
   size          Int
+  rawText       String?
+  analysis      Json?
   score         Int?
   status        String   @default("上传中")
   createdAt     DateTime @default(now())

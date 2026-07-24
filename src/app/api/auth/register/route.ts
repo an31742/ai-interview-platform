@@ -31,7 +31,12 @@ export async function POST(request: NextRequest) {
     const user = await userService.register(email, password, name);
 
     // ③ 签发 Token + 设置 Cookie + 返回响应
-    const token = await signToken(user);
+    const token = await signToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      createdAt: user.createdAt.getTime(),
+    });
     const cookie = setTokenCookie(token);
 
     const response = NextResponse.json({ user, token }, { status: 201 });

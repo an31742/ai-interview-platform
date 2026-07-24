@@ -21,9 +21,11 @@ The user is a complete beginner ("小白") with zero database or backend experie
 **Current progress (end of Day 3, 2026-07-22):**
 - ✅ Day 2: Designed User + Resume Prisma Schema, created database (dev.db)
 - ✅ Day 3: Understood B/C/A (backend/frontend-db connection/database essence)
-- ✅ Day 3: Completed 3-layer architecture for User registration
-- Controller → Service → Repository all written and tested
-- Registration works with database (no longer JSON file)
+- ✅ Day 3: Completed 3-layer architecture for ALL three User APIs (register, login, me)
+- ✅ All three User APIs now read from database (no longer JSON file)
+- ✅ Understood full data flow: Frontend → Controller → Service → Repository → Database
+- ✅ Learned to view database data (sqlite3 CLI, Prisma Studio, VS Code plugin)
+- ✅ Installed nvm, upgraded Node.js
 
 **User's current understanding level (from their own words):**
 - "Prisma是数据库的中介/翻译官"
@@ -59,6 +61,12 @@ The user learned three ways to view SQLite database data:
 3. VS Code plugin SQLite Viewer (most beginner-friendly)
 They also installed `nvm` and upgraded Node.js to fix Prisma Studio compatibility. Saw real data in the database firsthand.
 
+**Day 4 plan (self-directed):**
+The user wants to write the Resume CRUD API entirely on their own.
+- DO NOT write code for them. Give hints, explain errors, point to references.
+- They have the pattern from User: Repository → Service → Controller.
+- Day 4 folder has `README.md` with requirements but no code.
+- Let them struggle, make mistakes, and ask questions. That's how they learn.
+
 **Pending for Day 4:**
-- [ ] Refactor login/route.ts and me/route.ts to use database (currently still read JSON files from `src/lib/auth/store.ts`)
-- [ ] Resume upload and storage feature
+- [ ] User writes Resume API on their own (no code from me)

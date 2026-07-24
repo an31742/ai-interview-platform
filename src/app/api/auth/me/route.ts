@@ -1,11 +1,13 @@
 /**
  * GET /api/auth/me
  *
- * 获取当前登录用户信息
+ * 获取当前登录用户信息 —— Controller
  * 从 Cookie 或 Authorization header 读取 Token
  *
- * Response 200: { user: User }
- * Response 401: { error: "未登录" }
+ * Controller 只做三件事：
+ *   ① 解析 HTTP 请求（提取 Token）
+ *   ② 调 Service（查用户信息）
+ *   ③ 返回 HTTP 响应
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -14,11 +16,11 @@ import {
   extractTokenFromHeader,
   verifyToken,
 } from "@/lib/auth/utils";
-import { findUserById, toSafeUser } from "@/lib/auth/store";
+import { userService } from "@/database/services/user.service";
 
 export async function GET(request: NextRequest) {
   try {
-    // 从 Cookie 或 Header 提取 Token
+    // ① 从 Cookie 或 Header 提取 Token
     const token =
       extractTokenFromCookie(request) ||
       extractTokenFromHeader(request);
@@ -33,13 +35,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Token 无效或已过期" }, { status: 401 });
     }
 
-    // 查找用户
-    const user = await findUserById(payload.sub);
+    // ② 调 Service 查用户（走数据库，不走 JSON 文件）
+    const user = await userService.getProfile(payload.sub);
     if (!user) {
       return NextResponse.json({ error: "用户不存在" }, { status: 401 });
     }
 
-    return NextResponse.json({ user: toSafeUser(user) });
+    // ③ 返回响应（getProfile 已自动去掉密码）
+    return NextResponse.json({ user });
   } catch {
     return NextResponse.json({ error: "认证失败" }, { status: 401 });
   }
