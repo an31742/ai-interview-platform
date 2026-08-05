@@ -45,4 +45,37 @@ export const resumeService = {
 
     return resume;
   },
+
+  /**
+   * 获取当前用户的简历列表
+   */
+  async getResumes(userId: string) {
+    return resumeRepository.findByUserId(userId);
+  },
+
+  /**
+   * 获取单份简历详情
+   * 业务规则：只能看自己的简历
+   */
+  async getResumeById(resumeId: number, userId: string) {
+    const resume = await resumeRepository.findById(resumeId);
+
+    // 找不到，或者不是当前用户的简历 → 都返回同一个错误
+    if (!resume || resume.userId !== userId) {
+      throw new BusinessError("简历不存在或无权访问");
+    }
+
+    return resume;
+  },
+
+  /**
+   * 删除简历
+   * 业务规则：只能删除自己的简历
+   */
+  async deleteResume(resumeId: number, userId: string) {
+    // 先做权限检查，查不到直接抛错
+    await this.getResumeById(resumeId, userId);
+
+    return resumeRepository.delete(resumeId);
+  },
 };

@@ -31,4 +31,44 @@ export const resumeRepository = {
       },
     });
   },
+
+  /**
+   * 查询某个用户的全部简历（按上传时间倒序）
+   * 列表场景不返回 rawText 大字段
+   */
+  async findByUserId(userId: string) {
+    return prisma.resume.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        resumeName: true,
+        size: true,
+        resumeContext: true,
+        analysis: true,
+        score: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  },
+
+  /**
+   * 根据 ID 查询单份简历（返回完整信息）
+   */
+  async findById(id: number) {
+    return prisma.resume.findUnique({
+      where: { id },
+    });
+  },
+
+  /**
+   * 根据 ID 删除简历
+   */
+  async delete(id: number) {
+    return prisma.resume.delete({
+      where: { id },
+    });
+  },
 };
