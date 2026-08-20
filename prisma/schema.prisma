@@ -18,7 +18,9 @@ model User {
   updatedAt    DateTime @updatedAt
 
   // 一个用户可以有多个简历
-  resumes      Resume[]
+  resumes           Resume[]
+  // 一个用户可以有多场面试
+  interviewSessions InterviewSession[]
 }
 
 // 简历表
@@ -37,6 +39,49 @@ model Resume {
 
   // 每份简历属于一个用户
   user          User     @relation(fields: [userId], references: [id])
+  // 一份简历可以对应多场面试
+  interviewSessions InterviewSession[]
 
   @@index([userId])
+}
+
+
+// 面试会话表（一场面试）
+model InterviewSession {
+  id          String   @id @default(cuid())
+  userId      String
+  resumeId    Int?
+  jdContent   String?
+  mode        String
+  difficulty  String
+  status      String   @default("preparing")
+  duration    Int?
+  score       Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  completedAt DateTime?
+
+  user        User     @relation(fields: [userId], references: [id])
+  resume      Resume?  @relation(fields: [resumeId], references: [id])
+  messages    Message[]
+
+  @@index([userId])
+  @@index([resumeId])
+}
+
+// 面试消息表（一场面试中的每一条对话）
+model Message {
+  id         String   @id @default(cuid())
+  sessionId  String
+  role       String
+  content    String
+  type       String
+  phase      String?
+  score      Int?
+  evaluation String?
+  createdAt  DateTime @default(now())
+
+  session    InterviewSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
 }

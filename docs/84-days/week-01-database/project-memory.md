@@ -4,7 +4,8 @@ description: Zero-beginner learning full-stack. Teaching style and current progr
 metadata:
   type: user
   project: ai-interview-platform
-  day: 4
+  day: 5
+  date: 2026-08-18
 ---
 
 ## 用户背景
@@ -27,36 +28,113 @@ metadata:
 - "数据库就是数据文件，但有特定的存储和查找方法"
 - "Controller只调用交给Service → Service处理逻辑交给Repository → Repository处理数据"
 - "数据在第3步全部完事就再存，不要有数据就存"
+- "三层 Controller 骨架相同：解析请求 → 调 Service → 返回响应"
+- "400 是业务规则不通过，500 是服务器内部错误"
+- "一对多关系：外键放在'多'的那张表里（Resume.userId, Message.sessionId）"
 
-## 当前进度（Day 4 进行中，2026-07-22）
+## 技术栈与配置
 
-### 已完成的 API（全部走数据库）
+| 项目 | 版本/说明 |
+|------|-----------|
+| Next.js | 16.2.7（App Router，注意这是新版，API 路由在 `src/app/api/`） |
+| React | 19.2.4 |
+| Prisma | 7.8.0 + `@prisma/adapter-libsql`（SQLite） |
+| 数据库 | SQLite（`dev.db`），`DATABASE_URL` 在 `.env` |
+| 状态管理 | Zustand 5 + persist（前端 localStorage） |
+| AI | LangChain / LangGraph、OpenAI、HuggingFace Inference |
+| PDF | pdf-parse |
 
-| API | 文件 | 状态 |
-|-----|------|------|
-| POST /api/auth/register | src/app/api/auth/register/route.ts | ✅ 完成 |
-| POST /api/auth/login | src/app/api/auth/login/route.ts | ✅ 完成 |
-| GET /api/auth/me | src/app/api/auth/me/route.ts | ✅ 完成 |
-| POST /api/interview/analyze-resume | src/app/api/interview/analyze-resume/route.ts | ✅ 完成 |
+## 项目结构（关键路径）
 
-### 已写好的数据层
+```
+src/database/client.ts                           — Prisma 单例（Prisma 7 + libsql adapter）
+src/database/repositories/user.repository.ts     — User 数据访问
+src/database/services/user.service.ts            — User 业务逻辑 + BusinessError
+src/database/repositories/resume.repository.ts   — Resume 数据访问
+src/database/services/resume.service.ts          — Resume 业务逻辑
+src/app/api/auth/register/route.ts               — 注册 Controller
+src/app/api/auth/login/route.ts                  — 登录 Controller
+src/app/api/auth/me/route.ts                     — 查用户信息 Controller
+src/app/api/interview/analyze-resume/route.ts    — 简历上传 Controller
+src/app/api/resumes/route.ts                     — 简历列表/创建 Controller
+src/app/api/resumes/[id]/route.ts                — 简历详情/删除 Controller
+src/app/api/interview/chat/route.ts              — SSE 面试对话（尚未落库）
+src/lib/interview/graphs/interview-graph.ts      — LangGraph 面试状态机
+src/store/interview-store.ts                     — Zustand（面试数据仍在 localStorage）
+src/types/interview.ts                           — 前端类型定义
+prisma/schema.prisma                             — 数据模型
+prisma.config.ts                                 — Prisma 配置
+```
 
-- `src/database/client.ts` — Prisma Client 单例（Prisma 7 + libsql adapter）
-- `src/database/repositories/user.repository.ts` — findByEmail, findById, create, toSafeUser
-- `src/database/services/user.service.ts` — register, login, getProfile + BusinessError
-- `src/database/repositories/resume.repository.ts` — createResume, findByUserId, findById, delete
-- `src/database/services/resume.service.ts` — uploadAndAnalyze, getResumes, getResumeById, deleteResume
+## 已完成（Day 0-4）
 
-### Day 4 待完成
+### 已跑通走数据库的 API
 
-- [ ] 写 GET /api/resumes 的 Controller（`src/app/api/resumes/route.ts`）
-- [ ] 写 DELETE /api/resumes/[id] 的 Controller（`src/app/api/resumes/[id]/route.ts`）
-- 提示：Service 已经写好了（resumeService.getResumes, resumeService.deleteResume），只需要写 Controller
+| API | 状态 |
+|-----|------|
+| POST /api/auth/register | ✅ 完成 |
+| POST /api/auth/login | ✅ 完成 |
+| GET /api/auth/me | ✅ 完成 |
+| POST /api/interview/analyze-resume | ✅ 完成 |
+| GET /api/resumes | ✅ 完成（代码已写，已逐行理解） |
+| GET /api/resumes/[id] | ✅ 完成（代码已写，已逐行理解） |
+| DELETE /api/resumes/[id] | ✅ 完成（代码已写，已逐行理解） |
 
-### Schema（prisma/schema.prisma）
+### 已理解的概念
 
-User: id(cuid), email(@unique), name, passwordHash, salt, createdAt, updatedAt, resumes[]
-Resume: id(autoincrement), userId, resumeName, resumeContext(Json?), size, rawText(String?), analysis(Json?), score(Int?), status(@default"上传中"), createdAt, updatedAt, user(@relation), @@index([userId])
+- 三层架构：Controller → Service → Repository → Prisma → SQLite
+- Controller 三步骨架：解析请求 → 调 Service → 返回响应
+- BusinessError（业务错误 400/404）与系统错误（500）分开处理
+- JWT Token 验证：extractTokenFromCookie → extractTokenFromHeader → verifyToken → payload.sub
+- 一对多关系：外键放在"多"表（Resume.userId）
+- Prisma 语法：`字段名 类型 修饰符`、`?` 可选、`@` 修饰符
+
+## 当前进度（Day 5 进行中）
+
+### 今日目标
+
+面试对话数据从 localStorage 搬进数据库：
+
+```
+□ 理解 Message 为什么单独建表（概念）
+□ prisma/schema.prisma（加 InterviewSession + Message 模型）
+□ interview.repository.ts
+□ interview.service.ts
+□ /api/interview/start（创建面试 Controller）
+□ /api/interview/[id]/route.ts（详情 + 完成 + 删除 Controller）
+```
+
+### 概念已完成
+
+- ✅ Message 为什么单独建表：JSON 数组无法分页/并发写入会覆盖/全量加载浪费资源
+- ✅ 一对多关系：InterviewSession(1) → Message(N)，外键 `sessionId` 在 Message 表
+- ✅ InterviewSession 字段设计：id, userId, resumeId?, jdContent?, mode, difficulty, status, duration, score?, createdAt, completedAt?
+- ✅ Message 字段设计：id, sessionId, role, content, type, phase?, score?, evaluation?, createdAt
+
+### ⚠️ 当前 schema 存在错误，尚未通过校验
+
+`prisma/schema.prisma` 第 25-70 行需要修正：
+
+1. `Resume.id`：`String @default(autoincrement())` → 应改回 `Int @default(autoincrement())`
+2. Prisma 类型首字母大写：`string` → `String`，`int` → `Int`
+3. `@default(cuid())`：少了 `@`，写成了 `default(cuid())`
+4. `resumeId` 重复定义（第 49 行 string + 第 55 行 int）
+5. `messages string` → 应该是关系声明 `Message[]`
+6. `@relation(fuileds:...)` 拼写错误 → `fields`
+7. `status` 默认值用双引号 `"preparing"`
+8. `messageSession` 模型名应改为 `Message`
+9. `content 对话的内容` 缺少类型，应为 `content String`
+10. Message 缺 `evaluation`、`createdAt`、`session` 关系声明
+11. InterviewSession 缺 `duration`、`score`、`createdAt`、`updatedAt`、`resume` 关系声明
+
+### Day 5 待完成
+
+- [ ] 修正 schema 并通过 `npx prisma validate`
+- [ ] `npx prisma db push` 建表
+- [ ] 写 interview.repository.ts
+- [ ] 写 interview.service.ts
+- [ ] 写 API Controller
+- [ ] TypeScript 编译通过
 
 ## 用户自己做的技术决策
 
@@ -64,27 +142,5 @@ Resume: id(autoincrement), userId, resumeName, resumeContext(Json?), size, rawTe
 - score: Int, status: 文字字符串
 - email: @unique, 时间戳: 数据库自动维护
 - 简历数据在 AI 分析完成后再一次性存库（不存半成品）
-
-## 关键文件速查
-
-```
-src/database/client.ts                           — Prisma 单例
-src/database/repositories/user.repository.ts     — User 数据访问
-src/database/services/user.service.ts            — User 业务逻辑 + BusinessError
-src/database/repositories/resume.repository.ts   — Resume 数据访问
-src/database/services/resume.service.ts          — Resume 业务逻辑
-src/app/api/auth/register/route.ts               — User 注册 Controller
-src/app/api/auth/login/route.ts                  — User 登录 Controller
-src/app/api/auth/me/route.ts                     — 查用户信息 Controller
-src/app/api/interview/analyze-resume/route.ts    — 简历上传 Controller
-prisma/schema.prisma                             — User + Resume 模型
-prisma.config.ts                                 — Prisma 7 配置
-.env                                             — DATABASE_URL
-dev.db                                           — SQLite 数据库文件
-```
-
-## 下次开启新对话时这样说
-
-"我是纯新手小白，正在做 AI 面试平台的 Week 1 Day 4 学习。今天是继续写 GET /api/resumes 接口。我理解三层架构（Controller→Service→Repository），需要引导式教学，不要直接给代码，先解释再让我自己动手。"
-
-或者直接把这整段粘贴给我。
+- InterviewSession id: cuid（不暴露数量）
+- Message 单独建表（不用 JSON 数组嵌套）
