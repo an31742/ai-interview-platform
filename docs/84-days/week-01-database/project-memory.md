@@ -89,52 +89,67 @@ prisma.config.ts                                 — Prisma 配置
 - 一对多关系：外键放在"多"表（Resume.userId）
 - Prisma 语法：`字段名 类型 修饰符`、`?` 可选、`@` 修饰符
 
-## 当前进度（Day 5 进行中）
+## 当前进度（Day 5 已完成 ✅）
 
-### 今日目标
+### 今日目标 — 已全部完成！
 
 面试对话数据从 localStorage 搬进数据库：
 
 ```
-□ 理解 Message 为什么单独建表（概念）
-□ prisma/schema.prisma（加 InterviewSession + Message 模型）
-□ interview.repository.ts
-□ interview.service.ts
-□ /api/interview/start（创建面试 Controller）
-□ /api/interview/[id]/route.ts（详情 + 完成 + 删除 Controller）
+✅ 理解 Message 为什么单独建表（概念）
+✅ prisma/schema.prisma（加 InterviewSession + Message 模型）
+✅ interview.repository.ts
+✅ interview.service.ts
+✅ /api/interview/start（创建面试 Controller）
+✅ /api/interviews（面试列表 Controller）
+✅ /api/interview/[id]/route.ts（详情 + 完成 + 删除 Controller）
 ```
 
 ### 概念已完成
 
 - ✅ Message 为什么单独建表：JSON 数组无法分页/并发写入会覆盖/全量加载浪费资源
 - ✅ 一对多关系：InterviewSession(1) → Message(N)，外键 `sessionId` 在 Message 表
-- ✅ InterviewSession 字段设计：id, userId, resumeId?, jdContent?, mode, difficulty, status, duration, score?, createdAt, completedAt?
+- ✅ InterviewSession 字段设计：id, userId, resumeId?, jdContent?, mode, difficulty, status, duration, score?, createdAt, updatedAt, completedAt?
 - ✅ Message 字段设计：id, sessionId, role, content, type, phase?, score?, evaluation?, createdAt
 
-### ⚠️ 当前 schema 存在错误，尚未通过校验
+### Schema 修正 12 处错误并通过校验
 
-`prisma/schema.prisma` 第 25-70 行需要修正：
+| # | 错误 | 修正 |
+|---|------|------|
+| 1 | Resume.id 写成 String @default(autoincrement()) | 改回 Int @default(autoincrement()) |
+| 2 | 全篇 string/int 小写 | 改 String/Int 大写 |
+| 3 | default(cuid()) 缺 @ | 改 @default(cuid()) |
+| 4 | resumeId 重复定义两次 | 删一个，保留 Int? |
+| 5 | messages string | 改 messages Message[] 关系声明 |
+| 6 | @relation(fuileds:...) | 改 @relation(fields:...) |
+| 7 | status @default('preparing') 单引号 | 改双引号 "preparing" |
+| 8 | 模型名 messageSession | 改 Message |
+| 9 | content 对话的内容 缺类型 | 改 content String |
+| 10 | Message 缺 evaluation/createdAt/session 关系 | 补全 |
+| 11 | InterviewSession 缺 duration/score/createdAt/updatedAt/resume | 补全 |
+| 12 | User 缺 interviewSessions InterviewSession[] 反向关系 | 补上 |
 
-1. `Resume.id`：`String @default(autoincrement())` → 应改回 `Int @default(autoincrement())`
-2. Prisma 类型首字母大写：`string` → `String`，`int` → `Int`
-3. `@default(cuid())`：少了 `@`，写成了 `default(cuid())`
-4. `resumeId` 重复定义（第 49 行 string + 第 55 行 int）
-5. `messages string` → 应该是关系声明 `Message[]`
-6. `@relation(fuileds:...)` 拼写错误 → `fields`
-7. `status` 默认值用双引号 `"preparing"`
-8. `messageSession` 模型名应改为 `Message`
-9. `content 对话的内容` 缺少类型，应为 `content String`
-10. Message 缺 `evaluation`、`createdAt`、`session` 关系声明
-11. InterviewSession 缺 `duration`、`score`、`createdAt`、`updatedAt`、`resume` 关系声明
+### Day 5 代码全部完成
 
-### Day 5 待完成
+- [x] 修正 schema 并通过 `npx prisma validate` ✅
+- [x] `npx prisma db push` 建表 ✅（InterviewSession + Message 两张新表）
+- [x] `npx prisma generate` 更新 Prisma Client ✅
+- [x] 写 interview.repository.ts ✅（7 个操作：createSession/findSessionsByUserId/findSessionById/updateSession/deleteSession/createMessage/findMessagesBySessionId）
+- [x] 写 interview.service.ts ✅（6 个方法：startInterview/getInterviews/getInterviewById/completeInterview/deleteInterview/appendMessage，全带权限检查）
+- [x] 写 API Controller ✅：
+  - POST /api/interview/start（创建）
+  - GET /api/interviews（列表）
+  - GET /api/interview/[id]（详情+消息）
+  - PATCH /api/interview/[id]（完成）
+  - DELETE /api/interview/[id]（删除）
+- [x] `npx tsc --noEmit` TypeScript 0 错误 ✅
 
-- [ ] 修正 schema 并通过 `npx prisma validate`
-- [ ] `npx prisma db push` 建表
-- [ ] 写 interview.repository.ts
-- [ ] 写 interview.service.ts
-- [ ] 写 API Controller
-- [ ] TypeScript 编译通过
+### 踩坑记录（Day 5）
+
+1. **Prisma 类型首字母永远大写**：Int/String/DateTime，和有没有 default 无关
+2. **一对多关系两边都要声明**：InterviewSession 有 user User → User 必须有 interviewSessions InterviewSession[]，否则 db push 报 P1012
+3. **SQLite 不支持 Prisma 级联删除**：删 Session 前必须先手动 `deleteMany` 掉 Message，否则外键约束报错
+4. **改完 schema 一定要跑 `prisma generate`**：不跑的话 Prisma Client 里的 TS 类型还是旧的，tsc 会报 interviewSession/message 不存在
 
 ## 用户自己做的技术决策
 
