@@ -30,16 +30,41 @@
 import { processInterviewTurn } from "@/lib/interview/graphs/interview-graph";
 import { retrieveResumeContext } from "@/lib/interview/services/rag-context";
 import type { InterviewMessage } from "@/types/interview";
+import { interviewService } from "@/database/services/interview.service";
+import { BusinessError } from "@/database/services/user.service";
+import {
+  extractTokenFromCookie,
+  extractTokenFromHeader,
+  verifyToken,
+} from "@/lib/auth/utils";
 
 export async function POST(request: Request) {
   try {
-    // 1. 解析请求
+    // ================================================
+    // ① Token 验证（会员卡）
+    // ================================================
+    const token =
+      extractTokenFromCookie(request) ||
+      extractTokenFromHeader(request);
+    if (!token) {
+      return errorResponse("未登录", 401);
+    }
+    const payload = await verifyToken(token);
+    if (!payload || !payload.sub) {
+      return errorResponse("Token 无效或已过期", 401);
+    }
+    const userId = payload.sub;
+
+    // ================================================
+    // ② 解析请求（点菜 + 桌号）
+    // ================================================
     const body = await request.json().catch(() => null);
     if (!body) {
       return errorResponse("请求体格式错误", 400);
     }
 
     const {
+      sessionId,
       messages,
       phase,
       resumeContext,
@@ -49,6 +74,7 @@ export async function POST(request: Request) {
       phaseAnswerCount,
       totalAnswerCount,
     } = body as {
+      sessionId?: string;
       messages?: InterviewMessage[];
       phase?: string;
       resumeContext?: string;
@@ -59,8 +85,38 @@ export async function POST(request: Request) {
       totalAnswerCount?: number;
     };
 
+    if (!sessionId) {
+      return errorResponse("sessionId 必填（请先调用 /api/interview/start 创建面试）", 400);
+    }
     if (!Array.isArray(messages) || messages.length === 0) {
       return errorResponse("messages 必须是数组且不为空", 400);
+    }
+
+    // ================================================
+    // ③ 权限校验：确认这场面试属于当前用户（桌号是不是你订的？）
+    // ================================================
+    // getInterviewById 内部会检查：
+    //   1) sessionId 对应的面试存不存在？→ 不存在 throw BusinessError
+    //   2) session.userId === userId？  → 不是你的 throw BusinessError
+    //   throw 会被下面的 catch 统一处理成 400 错误响应。
+    //   返回值这里用不到（appendMessage 内部还会再做一次校验），所以不接收。
+    await interviewService.getInterviewById(sessionId, userId);
+
+    // ================================================
+    // ④ 记第一笔账：用户说的话存到数据库
+    // ================================================
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    if (lastUserMsg && lastUserMsg.content) {
+      await interviewService.appendMessage(
+        sessionId,
+        userId,
+        {
+          role: "user",
+          content: lastUserMsg.content,
+          type: "answer",
+          phase: (phase as any) || "self-intro",
+        }
+      );
     }
 
     // 2. 增强简历上下文（RAG 检索）
@@ -144,6 +200,24 @@ export async function POST(request: Request) {
           const doneData = JSON.stringify({ type: "done" });
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
           controller.close();
+
+          // ================================================
+          // ⑤ 记第二笔账：AI 回复完了，存到数据库
+          // ================================================
+          if (aiText) {
+            await interviewService.appendMessage(
+              sessionId,
+              userId,
+              {
+                role: "ai",
+                content: aiText,
+                type: "question",
+                phase: result.phase,
+                score: result.evaluation?.overall,
+                evaluation: result.evaluation?.comment,
+              }
+            );
+          }
         } catch (err) {
           const errorData = JSON.stringify({
             type: "error",
@@ -166,6 +240,9 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
+    if (err instanceof BusinessError) {
+      return errorResponse(err.message, 400);
+    }
     return errorResponse(
       err instanceof Error ? err.message : "服务器内部错误",
       500

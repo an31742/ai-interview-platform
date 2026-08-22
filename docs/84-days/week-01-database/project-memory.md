@@ -4,8 +4,8 @@ description: Zero-beginner learning full-stack. Teaching style and current progr
 metadata:
   type: user
   project: ai-interview-platform
-  day: 5
-  date: 2026-08-18
+  day: 6
+  date: 2026-08-22
 ---
 
 ## 用户背景
@@ -58,7 +58,12 @@ src/app/api/auth/me/route.ts                     — 查用户信息 Controller
 src/app/api/interview/analyze-resume/route.ts    — 简历上传 Controller
 src/app/api/resumes/route.ts                     — 简历列表/创建 Controller
 src/app/api/resumes/[id]/route.ts                — 简历详情/删除 Controller
-src/app/api/interview/chat/route.ts              — SSE 面试对话（尚未落库）
+src/app/api/interview/chat/route.ts              — SSE 面试对话（已接数据库，每轮存 2 条消息）✅
+src/app/api/interview/start/route.ts             — 创建面试 Controller ✅
+src/app/api/interviews/route.ts                  — 面试列表 Controller ✅
+src/app/api/interview/[id]/route.ts              — 面试详情/完成/删除 Controller ✅
+src/database/repositories/interview.repository.ts — Interview 数据访问 ✅
+src/database/services/interview.service.ts        — Interview 业务逻辑 + appendMessage ✅
 src/lib/interview/graphs/interview-graph.ts      — LangGraph 面试状态机
 src/store/interview-store.ts                     — Zustand（面试数据仍在 localStorage）
 src/types/interview.ts                           — 前端类型定义
@@ -88,8 +93,45 @@ prisma.config.ts                                 — Prisma 配置
 - JWT Token 验证：extractTokenFromCookie → extractTokenFromHeader → verifyToken → payload.sub
 - 一对多关系：外键放在"多"表（Resume.userId）
 - Prisma 语法：`字段名 类型 修饰符`、`?` 可选、`@` 修饰符
+- BusinessError 只接受 1 个 `message` 参数，不接受 status code（status 在 catch 里统一定）
+- Service 方法用 `throw BusinessError` 传错误，Controller 不用重复判空
+- TextEncoder（发数据/编码）vs TextDecoder（收数据/解码）
 
-## 当前进度（Day 5 已完成 ✅）
+## 当前进度（Day 6 已完成 ✅）
+
+### 今日目标 — 已完成
+
+把面试聊天过程（SSE）接入数据库，每轮对话存两条消息。
+
+### Day 6 代码完成
+
+- [x] 改造 `src/app/api/interview/chat/route.ts`：
+  - 加 Token 验证（extractTokenFromCookie → verifyToken → payload.sub）
+  - sessionId 必填（否则 400）
+  - 权限校验：getInterviewById(sessionId, userId)（内部 throw BusinessError）
+  - 存 user 消息：调 LangGraph 之前 appendMessage(role="user")
+  - 存 ai 消息：SSE 流 controller.close() 之后 appendMessage(role="ai")
+  - 最外层 catch 区分 BusinessError（400）vs 系统错误（500）
+- [x] `npx tsc --noEmit` 0 错误 ✅
+- [x] 端到端验证：创建面试 → 聊天 → 数据库返回 2 条消息（1 user + 1 ai）✅
+
+### 踩坑记录（Day 6）
+
+1. **BusinessError 构造函数只有 1 个参数**：`constructor(message: string)`，不要写 `throw new BusinessError("xx", 400)`，会编译报错
+2. **最外层 catch 必须 `instanceof BusinessError` 区分**：否则业务错误（面试不存在/无权/已结束）全被当成 500
+3. **Service 层已做权限校验，Controller 不重复判空**：getInterviewById 用 throw 传错误，拿到返回值就一定成功
+4. **存 ai 消息要放 ReadableStream 的 start 函数内、controller.close() 之后**：放外面（return Response 后）不执行，放 close 前会增加延迟
+5. **SSE 是发数据用 TextEncoder**（encode 编码成字节），不是 TextDecoder
+
+### 遗留到 Day 7
+
+1. 前端 store / 面试页没接数据库 sessionId（还在用 localStorage 本地随机 id）
+2. 面试结束流程（PATCH complete）没在前端触发
+3. AI 回复"抱歉，遇到技术问题"—— qwen 小模型对复杂 system prompt 处理不好，需调 prompt 或换模型
+
+---
+
+## Day 5 完成记录（历史）
 
 ### 今日目标 — 已全部完成！
 
