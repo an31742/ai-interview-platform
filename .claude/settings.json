@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -i -m 20 http://localhost:3000/chat)",
+      "Bash(curl -s -i -m 20 \"http://localhost:3000/auth/login?redirect=%2Fchat\")",
+      "Bash(curl -s -i -m 20 http://localhost:3000/api/auth/me)",
+      "Bash(rm -f /tmp/probe*.mjs /tmp/probe*.out /tmp/snap1.txt /tmp/snap2.txt; pkill -f \"next dev\"; sleep 1; pgrep -fl \"next dev\" | head; echo \"--- dev servers stopped ---\"; ls -la dev.db)",
+      "Bash(echo \"=== tsc exit: $? ===\")",
+      "Bash(npx eslint *)",
+      "Bash(echo \"=== eslint exit: $? ===\")",
+      "Bash(pkill -f \"next dev\"; sleep 1; rm -f /tmp/dev*.log /tmp/nextdev*.log /tmp/next-panic*.log 2>/dev/null *)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  }
+}
